@@ -1,6 +1,6 @@
 # Hotel Booking - микросервисное приложение (Java 21 / Spring Boot 3)
 
-Учебный, но production-shaped проект: четыре Spring Boot приложения, объединённые Eureka и
+Четыре Spring Boot приложения, объединённые Eureka и
 Spring Cloud Gateway, с JWT-аутентификацией (booking-service выдаёт токены, hotel-service их
 проверяет), сагой бронирования с компенсацией и защитой от гонок при пересечении дат.
 

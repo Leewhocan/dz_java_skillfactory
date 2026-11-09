@@ -1,0 +1,98 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: booking-service
+
+  datasource:
+    url: jdbc:h2:mem:bookingdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Defaults for every client. NOTE: in spring-cloud-openfeign 4.3.x these
+          # properties are plain Integers interpreted as MILLISECONDS (not Durations).
+          default:
+            connect-timeout: 2000
+            read-timeout: 5000
+            logger-level: basic
+          # hotel-service is a hard dependency of the booking saga
+          hotel-service:
+            connect-timeout: 2000
+            read-timeout: 5000
+            logger-level: basic
+      compression:
+        request:
+          enabled: true
+        response:
+          enabled: true
+
+security:
+  jwt:
+    # HS256 needs at least 32 bytes. Always override with the JWT_SECRET environment variable in real deployments.
+    # hotel-service verifies the same secret, so both services MUST share it.
+    secret: ${JWT_SECRET:change-me-development-only-secret-key-0123456789}
+    # Token lifetime: 1 hour
+    expiration: 1h
+  internal:
+    # Shared secret for the internal saga endpoints of hotel-service
+    # (confirm-availability / release). Must match hotel-service security.internal.*
+    header-name: ${INTERNAL_API_HEADER:X-Internal-Token}
+    token: ${INTERNAL_API_TOKEN:change-me-internal-service-token}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+booking:
+  bootstrap-admin:
+    username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:admin123}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.hotelbooking.booking: DEBUG
+    com.example.hotelbooking.booking.client.HotelClient: DEBUG

@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Route definitions: client path -> logical service name (resolved through Eureka + LoadBalancer)
+          routes:
+            # The internal saga endpoints of hotel-service are NOT part of the public API: they are
+            # authenticated by the shared X-Internal-Token secret and must only be reachable from
+            # booking-service inside the private network. Declared first + order=-1 so it wins.
+            - id: internal-saga-blocked
+              uri: no://op
+              order: -1
+              predicates:
+                - Path=/api/rooms/*/confirm-availability,/api/rooms/*/release
+              filters:
+                - SetStatus=403
+            - id: booking-service
+              uri: lb://booking-service
+              predicates:
+                # The service exposes /booking, /bookings and /user/**; the gateway publishes them
+                # under /api/* and strips that prefix before forwarding
+                - Path=/api/bookings/**,/api/booking/**,/api/user/**
+              filters:
+                - StripPrefix=1
+            - id: hotel-service
+              uri: lb://hotel-service
+              predicates:
+                # /api/hotels/** and /api/rooms/** (incl. /api/rooms/recommend) pass through unchanged
+                - Path=/api/hotels/**,/api/rooms/**
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 10s
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+    # Since Gateway 4.x the /actuator/gateway endpoint is disabled by default
+    gateway:
+      access: unrestricted
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.loadbalancer: INFO

@@ -1,0 +1,65 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: hotel-service
+  datasource:
+    url: jdbc:h2:mem:hoteldb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+security:
+  jwt:
+    # Must be byte-for-byte identical to booking-service (the issuer): hotel-service only
+    # VERIFIES tokens. 32+ chars required (HS256); override with the JWT_SECRET env variable.
+    secret: ${JWT_SECRET:change-me-development-only-secret-key-0123456789}
+  internal:
+    # Shared secret for the internal saga endpoints (confirm-availability / release)
+    header-name: ${INTERNAL_API_HEADER:X-Internal-Token}
+    token: ${INTERNAL_API_TOKEN:change-me-internal-service-token}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.hotelbooking.hotel: DEBUG
